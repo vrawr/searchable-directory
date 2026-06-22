@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Modern Work Stack — Searchable Directory</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#ffffff; --line:#e6e8eb; --line2:#d3d7dc;
+    --t1:#1b2330; --t2:#586069; --t3:#8a939d;
+    --accent:#3b5bdb; --accent-bg:#e7ecfb; --accent-dk:#2f49b0;
+    --tag-bg:#eef0f2; --tag-tx:#4a5560;
+    --free-bg:#e7f4ea; --free-tx:#1f7a3d;
+    --freemium-bg:#fbf3e0; --freemium-tx:#8a6312;
+    --paid-bg:#eef0f2; --paid-tx:#4a5560;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--t1);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px 16px 56px}
+  header{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  h1{font-size:21px;font-weight:650;margin:0;letter-spacing:-.01em}
+  .sub{color:var(--t2);font-size:13px;margin:3px 0 0}
+  .grow{flex:1}
+  .btn{appearance:none;border:1px solid var(--line2);background:#fff;color:var(--t1);
+    font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{background:#f1f3f5}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .controls .search{flex:1;min-width:220px;position:relative}
+  input[type=search],select{width:100%;height:42px;border:1px solid var(--line2);border-radius:10px;
+    background:#fff;padding:0 14px;font-size:14px;color:var(--t1);outline:none}
+  input[type=search]:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
+  select{min-width:170px;cursor:pointer}
+  .count{color:var(--t3);font-size:12.5px;margin:0 2px 14px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 17px;transition:border-color .12s,box-shadow .12s}
+  .card:hover{border-color:var(--line2);box-shadow:0 4px 16px rgba(27,35,48,.05)}
+  .chead{display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap}
+  .pill{font-size:11.5px;font-weight:550;padding:3px 10px;border-radius:7px;background:var(--accent-bg);color:var(--accent-dk)}
+  .badge{margin-left:auto;font-size:11px;font-weight:600;padding:3px 9px;border-radius:7px;white-space:nowrap;text-transform:uppercase;letter-spacing:.03em}
+  .badge.free{background:var(--free-bg);color:var(--free-tx)}
+  .badge.freemium{background:var(--freemium-bg);color:var(--freemium-tx)}
+  .badge.paid{background:var(--paid-bg);color:var(--paid-tx)}
+  .org{font-size:16px;font-weight:650;margin:0 0 2px}
+  .desc{font-size:13px;color:var(--t2);margin:0 0 11px}
+  .rows{display:flex;flex-direction:column;gap:1px}
+  .r{display:flex;align-items:center;gap:9px;padding:4px 0;font-size:13px}
+  .r .lab{color:var(--t3);width:64px;flex:none;font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+  .r .v{color:var(--t1);word-break:break-word}
+  .r .v a{color:var(--accent);text-decoration:none}
+  .r .v a:hover{text-decoration:underline}
+  .r .cp{margin-left:auto;flex:none;border:1px solid var(--line);background:#fff;color:var(--t2);
+    font-size:11px;padding:3px 8px;border-radius:6px;cursor:pointer}
+  .r .cp:hover{background:#f1f3f5;color:var(--t1)}
+  .callout{display:flex;gap:8px;font-size:12.5px;border-radius:9px;padding:9px 11px;margin-top:10px;line-height:1.45;
+    background:#f3f6fd;color:#34467e;border:1px solid #dce4f7}
+  .callout b{font-weight:600}
+  .state{text-align:center;color:var(--t3);padding:40px 0;font-size:14px}
+  .foot{margin-top:30px;color:var(--t3);font-size:12px;text-align:center}
+  @media(max-width:520px){.controls .search{min-width:100%}select{min-width:calc(50% - 5px)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="grow">
+      <h1 id="hTitle"></h1>
+      <p class="sub" id="hSub"></p>
+    </div>
+    <button id="clearBtn" class="btn" title="Reset filters">↻ Reset</button>
+  </header>
+
+  <div class="controls">
+    <div class="search">
+      <input id="q" type="search" placeholder="Search…" autocomplete="off" aria-label="Search">
+    </div>
+    <select id="f1" aria-label="Filter by category"></select>
+    <select id="f2" aria-label="Filter by tag"></select>
+  </div>
+
+  <p class="count" id="count"></p>
+  <div class="grid" id="grid"></div>
+  <div class="state" id="state" style="display:none"></div>
+  <p class="foot" id="foot"></p>
+</div>
+
+<script>
+/* =========================================================================
+   SEARCHABLE DIRECTORY — reusable template
+   -------------------------------------------------------------------------
+   To make your own directory, change two things:
+     1) CONFIG below  — title, labels, and which field feeds each filter.
+     2) DATA below     — one object per card.
+   Each DATA item uses this schema (all fields optional except title):
+     {
+       title:    "Name shown in bold",
+       category: "Primary group — feeds filter 1",
+       tag:      "Secondary group — feeds filter 2 (e.g. price, region)",
+       desc:     "One-line description under the title",
+       link:     "example.com   (no https:// needed)",
+       note:     "Highlighted callout line at the bottom of the card"
+     }
+   No build step, no server, no dependencies. Open this file in a browser
+   or embed it anywhere (Google Sites, Notion, an iframe, GitHub Pages).
+   ========================================================================= */
+
+  var CONFIG = {
+    title:    "The Modern Work Stack",
+    subtitle: "50 software tools professionals actually use, searchable by category and pricing.",
+    searchPlaceholder: "Search a tool, category, or what it does…",
+    filter1All: "All categories",   // label for the "all" option of filter 1 (category)
+    filter2All: "All pricing",      // label for the "all" option of filter 2 (tag)
+    linkLabel: "Site",
+    noteLabel: "Best for",
+    // Optional fixed ordering for filter 2 values; anything not listed sorts after, alphabetically.
+    tagOrder: ["Free","Freemium","Paid"],
+    footer:   "A self-contained directory template. Swap the DATA array to build your own."
+  };
+
+  var DATA = [
+    {title:"Asana", category:"Project Management", tag:"Freemium", link:"asana.com", desc:"Task and project tracking for teams.", note:"Cross-functional projects with clear owners"},
+    {title:"Trello", category:"Project Management", tag:"Freemium", link:"trello.com", desc:"Kanban boards with drag-and-drop cards.", note:"Lightweight, visual task tracking"},
+    {title:"Monday.com", category:"Project Management", tag:"Paid", link:"monday.com", desc:"Customizable work operating system.", note:"Teams that want flexible, colorful workflows"},
+    {title:"Jira", category:"Project Management", tag:"Freemium", link:"atlassian.com", desc:"Issue and sprint tracking for software teams.", note:"Agile engineering teams"},
+    {title:"Linear", category:"Project Management", tag:"Freemium", link:"linear.app", desc:"Fast, keyboard-driven issue tracking.", note:"Product teams that value speed"},
+    {title:"ClickUp", category:"Project Management", tag:"Freemium", link:"clickup.com", desc:"All-in-one work app with docs and goals.", note:"Consolidating many tools into one"},
+    {title:"Basecamp", category:"Project Management", tag:"Paid", link:"basecamp.com", desc:"Simple project and team organization.", note:"Small teams that want calm, not features"},
+
+    {title:"Notion", category:"Docs & Knowledge", tag:"Freemium", link:"notion.so", desc:"Docs, wikis, and databases in one workspace.", note:"Flexible internal knowledge bases"},
+    {title:"Confluence", category:"Docs & Knowledge", tag:"Freemium", link:"atlassian.com", desc:"Team wiki and documentation hub.", note:"Structured company documentation"},
+    {title:"Coda", category:"Docs & Knowledge", tag:"Freemium", link:"coda.io", desc:"Docs that behave like interactive apps.", note:"Docs that need tables, buttons, and logic"},
+    {title:"Obsidian", category:"Docs & Knowledge", tag:"Freemium", link:"obsidian.md", desc:"Local-first markdown notes with backlinks.", note:"Personal knowledge management"},
+    {title:"Google Workspace", category:"Docs & Knowledge", tag:"Paid", link:"workspace.google.com", desc:"Docs, Sheets, Slides, and Gmail for teams.", note:"Everyday collaborative documents"},
+
+    {title:"Slack", category:"Communication", tag:"Freemium", link:"slack.com", desc:"Channel-based team messaging.", note:"Day-to-day team chat and integrations"},
+    {title:"Microsoft Teams", category:"Communication", tag:"Freemium", link:"microsoft.com", desc:"Chat and video inside Microsoft 365.", note:"Organizations already on Microsoft 365"},
+    {title:"Zoom", category:"Communication", tag:"Freemium", link:"zoom.us", desc:"Reliable video meetings and webinars.", note:"External calls and large webinars"},
+    {title:"Google Meet", category:"Communication", tag:"Freemium", link:"meet.google.com", desc:"Browser-based video calls.", note:"Quick calls inside Google Workspace"},
+    {title:"Discord", category:"Communication", tag:"Freemium", link:"discord.com", desc:"Voice, video, and text for communities.", note:"Communities and informal teams"},
+    {title:"Loom", category:"Communication", tag:"Freemium", link:"loom.com", desc:"Record quick screen-and-camera videos.", note:"Async updates instead of meetings"},
+
+    {title:"Figma", category:"Design", tag:"Freemium", link:"figma.com", desc:"Collaborative interface design in the browser.", note:"Real-time product and UI design"},
+    {title:"Canva", category:"Design", tag:"Freemium", link:"canva.com", desc:"Drag-and-drop graphics and templates.", note:"Non-designers making polished assets"},
+    {title:"Adobe Creative Cloud", category:"Design", tag:"Paid", link:"adobe.com", desc:"Professional creative software suite.", note:"Serious photo, video, and print work"},
+    {title:"Sketch", category:"Design", tag:"Paid", link:"sketch.com", desc:"Mac-native interface design tool.", note:"Mac-based design teams"},
+    {title:"Miro", category:"Design", tag:"Freemium", link:"miro.com", desc:"Infinite collaborative whiteboard.", note:"Workshops, diagrams, and brainstorms"},
+    {title:"Framer", category:"Design", tag:"Freemium", link:"framer.com", desc:"Design and publish responsive sites.", note:"Designers shipping real websites"},
+
+    {title:"GitHub", category:"Development", tag:"Freemium", link:"github.com", desc:"Git hosting and code collaboration.", note:"Source control and open source"},
+    {title:"GitLab", category:"Development", tag:"Freemium", link:"gitlab.com", desc:"Git plus built-in CI/CD pipelines.", note:"End-to-end DevOps in one place"},
+    {title:"VS Code", category:"Development", tag:"Free", link:"code.visualstudio.com", desc:"Extensible code editor from Microsoft.", note:"Most everyday coding"},
+    {title:"Vercel", category:"Development", tag:"Freemium", link:"vercel.com", desc:"Deploy frontend apps with one push.", note:"Shipping modern web frontends"},
+    {title:"Postman", category:"Development", tag:"Freemium", link:"postman.com", desc:"Build, test, and document APIs.", note:"API development and testing"},
+    {title:"Docker", category:"Development", tag:"Freemium", link:"docker.com", desc:"Package apps into portable containers.", note:"Consistent dev and deploy environments"},
+
+    {title:"Tableau", category:"Data & Analytics", tag:"Paid", link:"tableau.com", desc:"Interactive data visualization.", note:"Polished dashboards for stakeholders"},
+    {title:"Power BI", category:"Data & Analytics", tag:"Freemium", link:"powerbi.microsoft.com", desc:"Microsoft's business analytics platform.", note:"Reporting in the Microsoft ecosystem"},
+    {title:"Looker", category:"Data & Analytics", tag:"Paid", link:"looker.com", desc:"Governed analytics and data modeling.", note:"Company-wide metrics consistency"},
+    {title:"Snowflake", category:"Data & Analytics", tag:"Paid", link:"snowflake.com", desc:"Cloud data warehouse and platform.", note:"Storing and querying large datasets"},
+    {title:"Airtable", category:"Data & Analytics", tag:"Freemium", link:"airtable.com", desc:"Spreadsheet-database hybrid with views.", note:"Lightweight relational databases"},
+
+    {title:"Salesforce", category:"CRM & Sales", tag:"Paid", link:"salesforce.com", desc:"Enterprise customer relationship platform.", note:"Large, customizable sales orgs"},
+    {title:"HubSpot", category:"CRM & Sales", tag:"Freemium", link:"hubspot.com", desc:"CRM with marketing and service tools.", note:"Growing teams wanting an all-in-one"},
+    {title:"Pipedrive", category:"CRM & Sales", tag:"Paid", link:"pipedrive.com", desc:"Visual sales pipeline management.", note:"Sales teams focused on deal flow"},
+
+    {title:"Mailchimp", category:"Marketing", tag:"Freemium", link:"mailchimp.com", desc:"Email campaigns and automation.", note:"Newsletters and small-business email"},
+    {title:"Hootsuite", category:"Marketing", tag:"Paid", link:"hootsuite.com", desc:"Schedule and manage social posts.", note:"Managing multiple social accounts"},
+    {title:"Semrush", category:"Marketing", tag:"Paid", link:"semrush.com", desc:"SEO, keyword, and competitor research.", note:"Search and content marketing"},
+
+    {title:"Workday", category:"HR & Finance", tag:"Paid", link:"workday.com", desc:"HR, payroll, and finance suite.", note:"Enterprise people and finance ops"},
+    {title:"Gusto", category:"HR & Finance", tag:"Paid", link:"gusto.com", desc:"Payroll, benefits, and onboarding.", note:"Small-business payroll and HR"},
+    {title:"QuickBooks", category:"HR & Finance", tag:"Paid", link:"quickbooks.intuit.com", desc:"Accounting and bookkeeping software.", note:"Small-business accounting"},
+    {title:"Expensify", category:"HR & Finance", tag:"Freemium", link:"expensify.com", desc:"Receipt scanning and expense reports.", note:"Tracking and reimbursing expenses"},
+
+    {title:"1Password", category:"Security & IT", tag:"Paid", link:"1password.com", desc:"Password and secrets manager for teams.", note:"Sharing credentials securely"},
+    {title:"Okta", category:"Security & IT", tag:"Paid", link:"okta.com", desc:"Single sign-on and identity management.", note:"Centralized login across apps"},
+    {title:"Cloudflare", category:"Security & IT", tag:"Freemium", link:"cloudflare.com", desc:"CDN, DNS, and web security.", note:"Speeding up and protecting sites"},
+
+    {title:"Dropbox", category:"Storage", tag:"Freemium", link:"dropbox.com", desc:"File sync and sharing across devices.", note:"Shared files and large transfers"},
+    {title:"Box", category:"Storage", tag:"Paid", link:"box.com", desc:"Cloud content management for business.", note:"Regulated, permission-heavy file storage"}
+  ];
+
+  /* ---- Engine (you usually don't need to edit below this line) ---- */
+  var elGrid, elState, elCount, elQ, elF1, elF2;
+
+  document.addEventListener('DOMContentLoaded', function(){
+    document.getElementById('hTitle').textContent = CONFIG.title;
+    document.getElementById('hSub').textContent = CONFIG.subtitle;
+    document.getElementById('foot').textContent = CONFIG.footer || '';
+    elGrid=document.getElementById('grid'); elState=document.getElementById('state');
+    elCount=document.getElementById('count'); elQ=document.getElementById('q');
+    elF1=document.getElementById('f1'); elF2=document.getElementById('f2');
+    elQ.placeholder = CONFIG.searchPlaceholder || 'Search…';
+    elQ.addEventListener('input', render);
+    elF1.addEventListener('change', render);
+    elF2.addEventListener('change', render);
+    document.getElementById('clearBtn').addEventListener('click', function(){
+      elQ.value=''; elF1.value=''; elF2.value=''; render();
+    });
+    fillSelect(elF1, uniq(DATA.map(function(r){return r.category;})), null, CONFIG.filter1All);
+    fillSelect(elF2, uniq(DATA.map(function(r){return r.tag;})), CONFIG.tagOrder, CONFIG.filter2All);
+    render();
+  });
+
+  function uniq(a){ var s={},o=[]; a.forEach(function(x){ x=(x||'').trim(); if(x&&!s[x]){s[x]=1;o.push(x);} }); return o; }
+
+  function fillSelect(sel, items, order, allLabel){
+    items.sort(function(a,b){
+      if(order){ var ia=order.indexOf(a), ib=order.indexOf(b);
+        if(ia<0)ia=99; if(ib<0)ib=99; if(ia!==ib) return ia-ib; }
+      return a.localeCompare(b);
+    });
+    sel.innerHTML='<option value="">'+(allLabel||'All')+'</option>';
+    items.forEach(function(it){ var o=document.createElement('option'); o.value=it; o.textContent=it; sel.appendChild(o); });
+  }
+
+  function render(){
+    var q=(elQ.value||'').toLowerCase().trim(), c=elF1.value, t=elF2.value;
+    var out=DATA.filter(function(r){
+      if(c && r.category!==c) return false;
+      if(t && r.tag!==t) return false;
+      if(q){
+        var hay=[r.title,r.category,r.tag,r.desc,r.note].join(' ').toLowerCase();
+        if(hay.indexOf(q)<0) return false;
+      }
+      return true;
+    });
+    out.sort(function(a,b){ return (a.category+a.title).localeCompare(b.category+b.title); });
+    elGrid.innerHTML='';
+    out.forEach(function(r){ elGrid.appendChild(card(r)); });
+    elState.style.display = out.length ? 'none' : 'block';
+    if(!out.length) elState.textContent='Nothing matches your search.';
+    elCount.textContent='Showing '+out.length+' of '+DATA.length;
+  }
+
+  function mk(tag, cls, txt){ var e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e; }
+
+  function badgeClass(tag){
+    var t=(tag||'').toLowerCase();
+    if(t==='free') return 'badge free';
+    if(t==='freemium') return 'badge freemium';
+    return 'badge paid';
+  }
+
+  function card(r){
+    var c=mk('div','card');
+    var head=mk('div','chead');
+    if(r.category) head.appendChild(mk('span','pill',r.category));
+    if(r.tag) head.appendChild(mk('span',badgeClass(r.tag),r.tag));
+    c.appendChild(head);
+
+    c.appendChild(mk('p','org',r.title));
+    if(r.desc) c.appendChild(mk('p','desc',r.desc));
+
+    if(r.link){
+      var rows=mk('div','rows');
+      var row=mk('div','r');
+      row.appendChild(mk('span','lab',CONFIG.linkLabel||'Link'));
+      var v=mk('span','v');
+      var a=mk('a',null,r.link); a.href='https://'+r.link; a.target='_blank'; a.rel='noopener';
+      v.appendChild(a); row.appendChild(v);
+      var btn=mk('button','cp','Copy');
+      btn.addEventListener('click', function(){ copy(r.link, btn); });
+      row.appendChild(btn);
+      rows.appendChild(row);
+      c.appendChild(rows);
+    }
+
+    if(r.note){
+      var d=mk('div','callout');
+      var body=mk('span'); body.appendChild(mk('b',null,(CONFIG.noteLabel||'Note')+': '));
+      body.appendChild(document.createTextNode(r.note));
+      d.appendChild(body); c.appendChild(d);
+    }
+    return c;
+  }
+
+  function copy(text, btn){
+    var done=function(){ var o=btn.textContent; btn.textContent='Copied'; setTimeout(function(){btn.textContent=o;},1200); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done, function(){ fallback(text); done(); });
+    } else { fallback(text); done(); }
+  }
+  function fallback(text){
+    var ta=document.createElement('textarea'); ta.value=text;
+    ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta);
+    ta.select(); try{ document.execCommand('copy'); }catch(e){} document.body.removeChild(ta);
+  }
+</script>
+</body>
+</html>
