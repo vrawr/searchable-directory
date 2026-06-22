@@ -98,8 +98,11 @@
        tag:      "Secondary group — feeds filter 2 (e.g. price, region)",
        desc:     "One-line description under the title",
        link:     "example.com   (no https:// needed)",
+       phone:    "(212) 555-0140   -> renders a click-to-call tel: link",
+       email:    "hello@example.com -> renders a click-to-email mailto: link",
        note:     "Highlighted callout line at the bottom of the card"
      }
+   Any row with a link, phone, or email gets a one-click Copy button.
    No build step, no server, no dependencies. Open this file in a browser
    or embed it anywhere (Google Sites, Notion, an iframe, GitHub Pages).
    ========================================================================= */
@@ -111,6 +114,8 @@
     filter1All: "All categories",   // label for the "all" option of filter 1 (category)
     filter2All: "All pricing",      // label for the "all" option of filter 2 (tag)
     linkLabel: "Site",
+    phoneLabel: "Phone",
+    emailLabel: "Email",
     noteLabel: "Best for",
     // Optional fixed ordering for filter 2 values; anything not listed sorts after, alphabetically.
     tagOrder: ["Free","Freemium","Paid"],
@@ -220,7 +225,7 @@
       if(c && r.category!==c) return false;
       if(t && r.tag!==t) return false;
       if(q){
-        var hay=[r.title,r.category,r.tag,r.desc,r.note].join(' ').toLowerCase();
+        var hay=[r.title,r.category,r.tag,r.desc,r.note,r.phone,r.email].join(' ').toLowerCase();
         if(hay.indexOf(q)<0) return false;
       }
       return true;
@@ -242,6 +247,21 @@
     return 'badge paid';
   }
 
+  // Builds one contact row: a label, a clickable value (https / tel / mailto),
+  // and a Copy button. external=true opens the link in a new tab.
+  function contactRow(label, display, href, external){
+    var row=mk('div','r');
+    row.appendChild(mk('span','lab',label));
+    var v=mk('span','v');
+    var a=mk('a',null,display); a.href=href;
+    if(external){ a.target='_blank'; a.rel='noopener'; }
+    v.appendChild(a); row.appendChild(v);
+    var btn=mk('button','cp','Copy');
+    btn.addEventListener('click', function(){ copy(display, btn); });
+    row.appendChild(btn);
+    return row;
+  }
+
   function card(r){
     var c=mk('div','card');
     var head=mk('div','chead');
@@ -252,19 +272,11 @@
     c.appendChild(mk('p','org',r.title));
     if(r.desc) c.appendChild(mk('p','desc',r.desc));
 
-    if(r.link){
-      var rows=mk('div','rows');
-      var row=mk('div','r');
-      row.appendChild(mk('span','lab',CONFIG.linkLabel||'Link'));
-      var v=mk('span','v');
-      var a=mk('a',null,r.link); a.href='https://'+r.link; a.target='_blank'; a.rel='noopener';
-      v.appendChild(a); row.appendChild(v);
-      var btn=mk('button','cp','Copy');
-      btn.addEventListener('click', function(){ copy(r.link, btn); });
-      row.appendChild(btn);
-      rows.appendChild(row);
-      c.appendChild(rows);
-    }
+    var rows=mk('div','rows'), hasRow=false;
+    if(r.link){  rows.appendChild(contactRow(CONFIG.linkLabel||'Site', r.link, 'https://'+r.link, true)); hasRow=true; }
+    if(r.phone){ rows.appendChild(contactRow(CONFIG.phoneLabel||'Phone', r.phone, 'tel:'+r.phone.replace(/[^+\d]/g,''), false)); hasRow=true; }
+    if(r.email){ rows.appendChild(contactRow(CONFIG.emailLabel||'Email', r.email, 'mailto:'+r.email, false)); hasRow=true; }
+    if(hasRow) c.appendChild(rows);
 
     if(r.note){
       var d=mk('div','callout');

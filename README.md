@@ -30,16 +30,22 @@ var CONFIG = {
 
 ```js
 {
-  title:    "Name shown in bold",        // required
-  category: "Primary group",             // feeds filter 1
-  tag:      "Secondary group",           // feeds filter 2 (price, region, status…)
-  desc:     "One-line description",       // under the title
-  link:     "example.com",                // no https:// needed
-  note:     "Highlighted line at bottom"  // the callout
+  title:    "Name shown in bold",         // required
+  category: "Primary group",              // feeds filter 1
+  tag:      "Secondary group",            // feeds filter 2 (price, region, status…)
+  desc:     "One-line description",        // under the title
+  link:     "example.com",                 // no https:// needed
+  phone:    "(212) 555-0140",              // click-to-call
+  email:    "hello@example.com",           // click-to-email
+  note:     "Highlighted line at bottom"   // the callout
 }
 ```
 
 All fields except `title` are optional — leave one blank and that part of the card simply doesn't render. The two dropdowns populate themselves from whatever `category` and `tag` values you use, so you never touch the filter code.
+
+### Click-to-call and click-to-email
+
+Add a `phone` and the card shows a tappable number that opens the dialer on a phone (`tel:`). Add an `email` and it opens a pre-addressed message (`mailto:`). Both sit next to a one-click Copy button, alongside the website link. This makes the template a drop-in for any contact directory — staff rosters, vendor lists, referral contacts. The work-stack demo leaves these blank because software tools have no contact line; populate them and the rows appear automatically.
 
 ## Coming from a spreadsheet
 
